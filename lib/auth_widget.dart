@@ -27,7 +27,6 @@ class _AuthWidgetState extends State<AuthWidget> {
           ? BaseScreens(widget.userSnapshot.data.uid)
           : !widget.seenOnboarding ? Walkthrough() : Login();
     }
-    print(widget.userSnapshot.hasData);
     return Scaffold(
       body: Center(
         child: CircularProgressIndicator(),

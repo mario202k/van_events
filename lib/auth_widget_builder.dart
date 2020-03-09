@@ -25,13 +25,17 @@ class AuthWidgetBuilder extends StatelessWidget {
       stream: authService.onAuthStateChanged,
       builder: (BuildContext context, AsyncSnapshot<FirebaseUser> snapshot) {
         final FirebaseUser user = snapshot.data;
-
         if (user != null) {
+
+          databaseBuilder(context, user.uid).createUserOnDatabase(user);
+
           return MultiProvider(
             providers: [
               StreamProvider<User>.value(
-                  value: databaseBuilder(context, user.uid).userStream(),
-                  initialData: toUser(user)),
+                value: databaseBuilder(context, user.uid).userStream(),
+                initialData: toUser(user),
+                catchError: (_, __) => toUser(user),
+              ),
               Provider<FirestoreDatabase>(
                 create: (context) => databaseBuilder(context, user.uid),
               ),

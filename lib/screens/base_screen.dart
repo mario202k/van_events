@@ -9,6 +9,7 @@ import 'package:flutter_inner_drawer/inner_drawer.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:provider/provider.dart';
+import 'package:vanevents/main.dart';
 import 'package:vanevents/models/user.dart';
 import 'package:vanevents/routing/route.gr.dart';
 import 'package:vanevents/screens/home_events.dart';
@@ -16,6 +17,8 @@ import 'package:vanevents/screens/profile.dart';
 import 'package:vanevents/screens/tickets.dart';
 import 'package:vanevents/services/firebase_auth_service.dart';
 import 'chat.dart';
+
+
 
 class BaseScreens extends StatefulWidget {
   final String uid;
@@ -123,42 +126,25 @@ class _BaseScreensState extends State<BaseScreens> {
     } else {
       _saveDeviceToken(uid);
     }
-    Future.delayed(const Duration(milliseconds: 1000), () {
-      _fcm.configure(
-        onMessage: (Map<String, dynamic> message) async {
-          showNotification(message);
-        },
-        onBackgroundMessage: myBackgroundMessageHandler,
-        onLaunch: (Map<String, dynamic> message) async {
-          print('onLaunch');
-          showNotification(message);
-        },
-        onResume: (Map<String, dynamic> message) async {
-          print('onResume');
+    _fcm.configure(
+      onMessage: (Map<String, dynamic> message) async {
+        showNotification(message);
+      },
+      onBackgroundMessage: myBackgroundMessageHandler,
+      onLaunch: (Map<String, dynamic> message) async {
+        print('onLaunch');
+        //showNotification(message);
+      },
+      onResume: (Map<String, dynamic> message) async {
+        print('onResume');
 
-          showNotification(message);
-        },
-      );
-
-    });
+        //showNotification(message);
+      },
+    );
 
   }
 
-  Future<dynamic> myBackgroundMessageHandler(Map<String, dynamic> message) {
-    if (message.containsKey('data')) {
-      // Handle data message
-      final dynamic data = message['data'];
-      print(data);
-    }
 
-    if (message.containsKey('notification')) {
-      // Handle notification message
-      final dynamic notification = message['notification'];
-      print(notification);
-    }
-    showNotification(message);
-    // Or do other work.
-  }
 
   void configLocalNotification() {
     var initializationSettingsAndroid =

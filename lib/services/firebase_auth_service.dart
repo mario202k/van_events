@@ -1,4 +1,3 @@
-
 import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -11,10 +10,10 @@ class FirebaseAuthService {
   final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
   final StorageReference _storageReference = FirebaseStorage.instance.ref();
 
-
   Stream<FirebaseUser> get onAuthStateChanged {
+    return _firebaseAuth.onAuthStateChanged
+        .where((user) => user.isEmailVerified);
 
-    return _firebaseAuth.onAuthStateChanged.where((user)=> user.isEmailVerified);
   }
 
   Future<AuthResult> googleSignIn() async {
@@ -22,7 +21,7 @@ class FirebaseAuthService {
     try {
       GoogleSignInAccount googleSignInAccount = await _googleSignIn.signIn();
       GoogleSignInAuthentication googleAuth =
-      await googleSignInAccount.authentication;
+          await googleSignInAccount.authentication;
 
       final AuthCredential credential = GoogleAuthProvider.getCredential(
         accessToken: googleAuth.accessToken,
@@ -30,7 +29,6 @@ class FirebaseAuthService {
       );
 
       return await _firebaseAuth.signInWithCredential(credential);
-
     } catch (error) {
       print(error);
       return null;
@@ -44,13 +42,12 @@ class FirebaseAuthService {
       email: email,
       password: password,
     ));
-
   }
 
   Future<AuthResult> createUserWithEmailAndPassword(
       String email, String password) async {
-    return await _firebaseAuth
-        .createUserWithEmailAndPassword(email: email, password: password);
+    return await _firebaseAuth.createUserWithEmailAndPassword(
+        email: email, password: password);
   }
 
   Future<void> sendPasswordResetEmail(String email) async {
@@ -66,22 +63,43 @@ class FirebaseAuthService {
     return _firebaseAuth.signOut();
   }
 
-  Future<String> resetEmail(String email, BuildContext context)async{
-
-    await _firebaseAuth.sendPasswordResetEmail(email: email).then((_){
+  Future<String> resetEmail(String email, BuildContext context) async {
+    await _firebaseAuth.sendPasswordResetEmail(email: email).then((_) {
       showSnackBar('Envoyer', context);
     });
 
     return 'sent';
+  }
+
+  Future<void> registerByProvider(FirebaseUser firebaseUser) async{
+
+    await Firestore.instance
+        .collection('users')
+        .document(firebaseUser.uid)
+        .setData({
+      "id": firebaseUser.uid,
+      'nom': firebaseUser.displayName,
+      'imageUrl': firebaseUser.photoUrl,
+      'email': firebaseUser.email,
+      'password': '',
+      'lastActivity': DateTime.now(),
+      'provider': firebaseUser.providerId,
+      'isLogin': false,
+      'attended': [],
+      'willAttend': [],
+      'chat': [],
+      'chatId': {}
+    }, merge: true);
+
 
   }
 
   Future<String> register(String email, String password, String nom, File image,
-      BuildContext context)async{
-
-
+      BuildContext context) async {
     //Si l'utilisateur est bien inconnu
-    await _firebaseAuth.fetchSignInMethodsForEmail(email: email).then((list) async{
+    await _firebaseAuth
+        .fetchSignInMethodsForEmail(email: email)
+        .then((list) async {
       if (list.isEmpty) {
         //création du user
         await _firebaseAuth
@@ -98,7 +116,10 @@ class FirebaseAuthService {
           //création de l'url pour la photo profil
           await uploadImage(uploadTask).then((url) async {
             //création du user dans la _db
-            await Firestore.instance.collection('users').document(user.user.uid).setData({
+            await Firestore.instance
+                .collection('users')
+                .document(user.user.uid)
+                .setData({
               "id": user.user.uid,
               'nom': nom,
               'imageUrl': url,
@@ -111,52 +132,42 @@ class FirebaseAuthService {
               'willAttend': [],
               'chat': [],
               'chatId': {}
-            }, merge: true).then((_) async{
-
+            }, merge: true).then((_) async {
               //envoi de l'email de vérification
               await user.user.sendEmailVerification().then((_) {
-
                 showSnackBar('un email de validation a été envoyé', context);
-
-
               }).catchError((e) {
                 print(e);
                 showSnackBar('Impossible d\'envoyer l\'e-mail', context);
-
               });
             });
           }).catchError((e) {
             print(e);
             showSnackBar('Impossible de joindre le serveur', context);
-
           });
         }).catchError((e) {
           print(e);
           showSnackBar('Impossible de joindre le serveur', context);
-
         });
       } else {
         showSnackBar('L\' email existe déjà', context);
-
       }
     }).catchError((e) {
       print(e);
-
     });
 
     return 'All done';
-
   }
 
   void showSnackBar(String val, BuildContext context) {
-
     Scaffold.of(context).showSnackBar(SnackBar(
         backgroundColor: Theme.of(context).colorScheme.error,
         duration: Duration(seconds: 3),
         content: Text(
           val,
           textAlign: TextAlign.center,
-          style: TextStyle(color: Theme.of(context).colorScheme.onError, fontSize: 16.0),
+          style: TextStyle(
+              color: Theme.of(context).colorScheme.onError, fontSize: 16.0),
         )));
   }
 

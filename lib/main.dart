@@ -9,6 +9,22 @@ import 'package:vanevents/routing/route.gr.dart';
 import 'package:vanevents/services/firebase_auth_service.dart';
 import 'package:vanevents/services/firestore_database.dart';
 
+Future<dynamic> myBackgroundMessageHandler(Map<String, dynamic> message) {
+  if (message.containsKey('data')) {
+    // Handle data message
+    final dynamic data = message['data'];
+    print(data);
+  }
+
+  if (message.containsKey('notification')) {
+    // Handle notification message
+    final dynamic notification = message['notification'];
+    print(notification);
+  }
+
+  // Or do other work.
+}
+
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();

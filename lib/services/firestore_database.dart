@@ -79,7 +79,7 @@ class FirestoreDatabase {
         .limit(1)
         .getDocuments()
         .then((doc) => doc.documents.map((doc) => Message.fromMap(doc.data)))
-        .then((list) => list.isNotEmpty? list.elementAt(0): null);
+        .then((list) => list.isNotEmpty ? list.elementAt(0) : null);
   }
 
   Stream<List<Message>> getChatMessageNonLu(String chatId) {
@@ -373,5 +373,33 @@ class FirestoreDatabase {
           style: TextStyle(
               color: Theme.of(context).colorScheme.onError, fontSize: 16.0),
         )));
+  }
+
+  Future createUserOnDatabase(FirebaseUser user) async {
+    await Firestore.instance
+        .collection('users')
+        .document(user.uid)
+        .get().then((doc)async{
+      print(doc);
+          if(!doc.exists){
+            await Firestore.instance
+                .collection('users')
+                .document(user.uid)
+                .setData({
+              "id": user.uid,
+              'nom': user.displayName,
+              'imageUrl': user.photoUrl,
+              'email': user.email,
+              'password': '',
+              'lastActivity': DateTime.now(),
+              'provider': user.providerId,
+              'isLogin': false,
+              'attended': [],
+              'willAttend': [],
+              'chat': [],
+              'chatId': {}
+            }, merge: true);
+          }
+    });
   }
 }
