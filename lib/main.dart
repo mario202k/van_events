@@ -1,298 +1,150 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'dart:async';
-import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:vanevents/auth_widget.dart';
+import 'package:vanevents/auth_widget_builder.dart';
+import 'package:vanevents/routing/route.gr.dart';
+import 'package:vanevents/services/firebase_auth_service.dart';
+import 'package:vanevents/services/firestore_database.dart';
 
 
-Future<dynamic> myBackgroundMessageHandler(Map<String, dynamic> message) {
-  if (message.containsKey('data')) {
-    // Handle data message
-    final dynamic data = message['data'];
-    print(data);
-  }
-
-  if (message.containsKey('notification')) {
-    // Handle notification message
-    final dynamic notification = message['notification'];
-    print(notification);
-  }
-
-  // Or do other work.
-}
-
-final Map<String, Item> _items = <String, Item>{};
-Item _itemForMessage(Map<String, dynamic> message) {
-  final dynamic data = message['data'] ?? message;
-  final String itemId = data['id'];
-  final Item item = _items.putIfAbsent(itemId, () => Item(itemId: itemId))
-    .._matchteam = data['matchteam']
-    .._score = data['score'];
-  return item;
-}
-
-class Item {
-  Item({this.itemId});
-  final String itemId;
-
-  StreamController<Item> _controller = StreamController<Item>.broadcast();
-  Stream<Item> get onChanged => _controller.stream;
-
-  String _matchteam;
-  String get matchteam => _matchteam;
-  set matchteam(String value) {
-    _matchteam = value;
-    _controller.add(this);
-  }
-
-  String _score;
-  String get score => _score;
-  set score(String value) {
-    _score = value;
-    _controller.add(this);
-  }
-
-  static final Map<String, Route<void>> routes = <String, Route<void>>{};
-  Route<void> get route {
-    final String routeName = '/detail/$itemId';
-    return routes.putIfAbsent(
-      routeName,
-          () => MaterialPageRoute<void>(
-        settings: RouteSettings(name: routeName),
-        builder: (BuildContext context) => DetailPage(itemId),
-      ),
-    );
-  }
-}
-
-class DetailPage extends StatefulWidget {
-  DetailPage(this.itemId);
-  final String itemId;
-  @override
-  _DetailPageState createState() => _DetailPageState();
-}
-
-class _DetailPageState extends State<DetailPage> {
-  Item _item;
-  StreamSubscription<Item> _subscription;
-
-  @override
-  void initState() {
-    super.initState();
-    _item = _items[widget.itemId];
-    _subscription = _item.onChanged.listen((Item item) {
-      if (!mounted) {
-        _subscription.cancel();
-      } else {
-        setState(() {
-          _item = item;
-        });
-      }
-    });
-  }
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text("Match ID ${_item.itemId}"),
-      ),
-      body: SingleChildScrollView(
-        child: Container(
-          padding: EdgeInsets.all(20.0),
-          child: Card(
-            child: Container(
-                padding: EdgeInsets.all(10.0),
-                child: Column(
-                  children: <Widget>[
-                    Container(
-                      margin: EdgeInsets.fromLTRB(0, 0, 0, 10),
-                      child: Column(
-                        children: <Widget>[
-                          Text('Today match:', style: TextStyle(color: Colors.black.withOpacity(0.8))),
-                          Text( _item.matchteam, style: Theme.of(context).textTheme.title)
-                        ],
-                      ),
-                    ),
-                    Container(
-                      margin: EdgeInsets.fromLTRB(0, 0, 0, 10),
-                      child: Column(
-                        children: <Widget>[
-                          Text('Score:', style: TextStyle(color: Colors.black.withOpacity(0.8))),
-                          Text( _item.score, style: Theme.of(context).textTheme.title)
-                        ],
-                      ),
-                    ),
-                  ],
-                )
-            ),
-          ),
-        ),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
-    );
-  }
+void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  SharedPreferences.getInstance().then((prefs) {
+    runApp(MyApp(
+        authServiceBuilder: (_) => FirebaseAuthService(),
+        databaseBuilder: (_, uid) => FirestoreDatabase(uid: uid),
+        prefs: prefs));
+  });
 }
 
 class MyApp extends StatelessWidget {
-  // This widget is the root of your application.
+  final SharedPreferences prefs;
+
+  // Expose builders for 3rd party services at the root of the widget tree
+  // This is useful when mocking services while testing
+  final FirebaseAuthService Function(BuildContext context) authServiceBuilder;
+  final FirestoreDatabase Function(BuildContext context, String uid)
+      databaseBuilder;
+
+  MyApp({Key key, this.authServiceBuilder, this.databaseBuilder, this.prefs})
+      : super(key: key);
+
+  final ColorScheme colorScheme = ColorScheme(
+      primary: const Color(0xFF5D1049),
+      primaryVariant: const Color(0xFF5D1049),
+      secondary: const Color(0xFFEFBFF5),
+      secondaryVariant: const Color(0xFF1CDEC9),
+      background: const Color(0xFF451B6F),
+      surface: const Color(0xFFFFFFFF),
+      onBackground: const Color(0xFF000000),
+      error: const Color(0xFF5733FF),
+      onError: const Color(0xFFFFFFFF),
+      onPrimary: const Color(0xFFFFFFFF),
+      onSecondary: const Color(0xFFFFFFFF),
+      onSurface: const Color(0xFF5D1049),
+      brightness: Brightness.dark);
+
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // Try running your application with "flutter run". You'll see the
-        // application has a blue toolbar. Then, without quitting the app, try
-        // changing the primarySwatch below to Colors.green and then invoke
-        // "hot reload" (press "r" in the console where you ran "flutter run",
-        // or simply save your changes to "hot reload" in a Flutter IDE).
-        // Notice that the counter didn't reset back to zero; the application
-        // is not restarted.
-        primarySwatch: Colors.blue,
-      ),
-      home: MyHomePage(title: 'Flutter Demo Home Page'),
-    );
-  }
-}
-
-class MyHomePage extends StatefulWidget {
-  MyHomePage({Key key, this.title}) : super(key: key);
-  final String title;
-
-  @override
-  _MyHomePageState createState() => _MyHomePageState();
-}
-
-class _MyHomePageState extends State<MyHomePage> {
-  bool _topicButtonsDisabled = false;
-
-  final FirebaseMessaging _firebaseMessaging = FirebaseMessaging();
-  final TextEditingController _topicController =
-  TextEditingController(text: 'topic');
-
-  Widget _buildDialog(BuildContext context, Item item) {
-    return AlertDialog(
-      content: Text("${item.matchteam} with score: ${item.score}"),
-      actions: <Widget>[
-        FlatButton(
-          child: const Text('CLOSE'),
-          onPressed: () {
-            Navigator.pop(context, false);
-          },
-        ),
-        FlatButton(
-          child: const Text('SHOW'),
-          onPressed: () {
-            Navigator.pop(context, true);
-          },
+    return MultiProvider(
+      providers: [
+        Provider<FirebaseAuthService>(
+          create: authServiceBuilder,
         ),
       ],
-    );
-  }
-
-  void _showItemDialog(Map<String, dynamic> message) {
-    showDialog<bool>(
-      context: context,
-      builder: (_) => _buildDialog(context, _itemForMessage(message)),
-    ).then((bool shouldNavigate) {
-      if (shouldNavigate == true) {
-        _navigateToItemDetail(message);
-      }
-    });
-  }
-
-  void _navigateToItemDetail(Map<String, dynamic> message) {
-    final Item item = _itemForMessage(message);
-    // Clear away dialogs
-    Navigator.popUntil(context, (Route<dynamic> route) => route is PageRoute);
-    if (!item.route.isCurrent) {
-      Navigator.push(context, item.route);
-    }
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    _firebaseMessaging.configure(
-      onMessage: (Map<String, dynamic> message) async {
-        print("onMessage: $message");
-        _showItemDialog(message);
-      },
-      onBackgroundMessage: myBackgroundMessageHandler,
-      onLaunch: (Map<String, dynamic> message) async {
-        print("onLaunch: $message");
-        _navigateToItemDetail(message);
-      },
-      onResume: (Map<String, dynamic> message) async {
-        print("onResume: $message");
-        _navigateToItemDetail(message);
-      },
-    );
-    _firebaseMessaging.requestNotificationPermissions(
-        const IosNotificationSettings(
-            sound: true, badge: true, alert: true, provisional: true));
-    _firebaseMessaging.onIosSettingsRegistered
-        .listen((IosNotificationSettings settings) {
-      print("Settings registered: $settings");
-    });
-    _firebaseMessaging.getToken().then((String token) {
-      assert(token != null);
-      print("Push Messaging token: $token");
-    });
-    _firebaseMessaging.subscribeToTopic("matchscore");
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
-    return Scaffold(
-      appBar: AppBar(
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: const Text('My Flutter FCM'),
-      ),
-      body: SingleChildScrollView(
-        child: Container(
-          padding: EdgeInsets.all(20.0),
-          child: Card(
-            child: Container(
-                padding: EdgeInsets.all(10.0),
-                child: Column(
-                  children: <Widget>[
-                    Container(
-                      margin: EdgeInsets.fromLTRB(0, 0, 0, 10),
-                      child: Column(
-                        children: <Widget>[
-                          Text('Welcome to this Flutter App:', style: TextStyle(color: Colors.black.withOpacity(0.8))),
-                          Text('You already subscribe to the matchscore topic', style: Theme.of(context).textTheme.title)
-                        ],
+      child: AuthWidgetBuilder(
+          databaseBuilder: databaseBuilder,
+          builder:
+              (BuildContext context, AsyncSnapshot<FirebaseUser> userSnapshot) {
+            return Material(
+              child: MaterialApp(
+                debugShowCheckedModeBanner: false,
+                theme: ThemeData(
+                    colorScheme: colorScheme,
+                    primaryColor: colorScheme.primary,
+                    accentColor: colorScheme.secondary,
+                    backgroundColor: colorScheme.background,
+                    textTheme: TextTheme(
+                      display1: GoogleFonts.raleway(
+                        fontSize: 25.0,
+                        color: colorScheme.onSurface,
+                      ),
+                      display2: GoogleFonts.raleway(
+                        fontSize: 28.0,
+                        color: colorScheme.onSurface,
+                      ),
+                      display3: GoogleFonts.raleway(
+                        fontSize: 61.0,
+                        color: colorScheme.onPrimary,
+                      ),
+                      display4: GoogleFonts.raleway(
+                        fontSize: 98.0,
+                        color: colorScheme.onPrimary,
+                      ),
+                      caption: GoogleFonts.sourceCodePro(
+                        fontSize: 11.0,
+                        color: colorScheme.onPrimary,
+                      ),
+                      headline: GoogleFonts.raleway(
+                        fontSize: 35.0,
+                        color: colorScheme.onPrimary,
+                      ),
+                      subhead: GoogleFonts.sourceCodePro(
+                        fontSize: 16.0,
+                        color: colorScheme.onPrimary,
+                      ),
+                      overline: GoogleFonts.sourceCodePro(
+                        fontSize: 11.0,
+                        color: colorScheme.onPrimary,
+                      ),
+                      body2: GoogleFonts.sourceCodePro(
+                        fontSize: 17.0,
+                        color: colorScheme.onPrimary,
+                      ),
+                      subtitle: GoogleFonts.sourceCodePro(
+                        fontSize: 14.0,
+                        color: colorScheme.onPrimary,
+                      ),
+                      body1: GoogleFonts.sourceCodePro(
+                        fontSize: 15.0,
+                        color: colorScheme.onPrimary,
+                      ),
+                      title: GoogleFonts.sourceCodePro(
+                        fontSize: 16.0,
+                        color: colorScheme.onPrimary,
+                      ),
+                      button: GoogleFonts.sourceCodePro(
+                        fontSize: 15.0,
+                        color: colorScheme.onPrimary,
                       ),
                     ),
-                    Container(
-                      margin: EdgeInsets.fromLTRB(0, 0, 0, 10),
-                      child: Column(
-                        children: <Widget>[
-                          Text('Now you will receive the push notification from the matchscore topics', style: TextStyle(color: Colors.black.withOpacity(0.8)))
-                        ],
-                      ),
-                    ),
-                  ],
-                )
-            ),
-          ),
-        ),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
+                    buttonTheme: ButtonThemeData(
+                        textTheme: ButtonTextTheme.primary,
+                        splashColor: colorScheme.primary,
+                        colorScheme: colorScheme,
+                        buttonColor: colorScheme.surface,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20))),
+                    floatingActionButtonTheme: FloatingActionButtonThemeData(
+                        foregroundColor: colorScheme.secondary),
+                    inputDecorationTheme: InputDecorationTheme(
+                        border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(20))),
+                    cardTheme: CardTheme(
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(25))),
+                    dividerColor: colorScheme.secondary),
+                home: AuthWidget(
+                    userSnapshot: userSnapshot,
+                    seenOnboarding: prefs.getBool('seen') ?? false),
+                onGenerateRoute: Router.onGenerateRoute,
+//                    prefs.getBool('seen') ?? false),
+              ),
+            );
+          }),
     );
   }
-}
-
-void main() {
-  runApp(
-    MaterialApp(
-      home: MyHomePage(),
-    ),
-  );
 }
