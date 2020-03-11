@@ -22,6 +22,7 @@ class _LoginState extends State<Login> {
   final TextEditingController _password = new TextEditingController();
   bool _obscureTextSignupConfirm = true;
   GlobalKey key = GlobalKey();
+  bool isDispose = false;
 
   double height = 4.30;
 
@@ -35,9 +36,12 @@ class _LoginState extends State<Login> {
 
   _afterLayout(_) {
 
-    setState(() {
-      height = _getSizes() / 45;
-    });
+    if(!isDispose){
+      setState(() {
+        height = _getSizes() / 45;
+      });
+    }
+
 
   }
 
@@ -50,6 +54,7 @@ class _LoginState extends State<Login> {
 
   @override
   void dispose() {
+    isDispose = true;
     _nodeEmail.dispose();
     _nodePassword.dispose();
     _email.dispose();
@@ -146,14 +151,14 @@ class _LoginState extends State<Login> {
                                               .button,
                                           cursorColor: Theme.of(context)
                                               .colorScheme
-                                              .onPrimary,
+                                              .onBackground,
                                           attribute: 'email',
                                           decoration: InputDecoration(
                                             enabledBorder: OutlineInputBorder(
                                                 borderSide: BorderSide(
                                                     color: Theme.of(context)
                                                         .colorScheme
-                                                        .onPrimary,
+                                                        .onBackground,
                                                     width: 2),
                                                 borderRadius:
                                                     BorderRadius.circular(
@@ -168,7 +173,7 @@ class _LoginState extends State<Login> {
                                               size: 22.0,
                                               color: Theme.of(context)
                                                   .colorScheme
-                                                  .onPrimary,
+                                                  .onBackground,
                                             ),
                                             errorStyle: Theme.of(context)
                                                 .textTheme
@@ -200,10 +205,10 @@ class _LoginState extends State<Login> {
                                           style: TextStyle(
                                               color: Theme.of(context)
                                                   .colorScheme
-                                                  .onPrimary),
+                                                  .onBackground,),
                                           cursorColor: Theme.of(context)
                                               .colorScheme
-                                              .onPrimary,
+                                              .onBackground,
                                           attribute: 'mot de passe',
                                           obscureText:
                                               _obscureTextSignupConfirm,
@@ -213,7 +218,7 @@ class _LoginState extends State<Login> {
                                                 borderSide: BorderSide(
                                                     color: Theme.of(context)
                                                         .colorScheme
-                                                        .onPrimary,
+                                                        .onBackground,
                                                     width: 2),
                                                 borderRadius:
                                                     BorderRadius.circular(
@@ -228,13 +233,13 @@ class _LoginState extends State<Login> {
                                               size: 22.0,
                                               color: Theme.of(context)
                                                   .colorScheme
-                                                  .onPrimary,
+                                                  .onBackground,
                                             ),
                                             suffixIcon: IconButton(
                                               onPressed: _togglePassword,
                                               color: Theme.of(context)
                                                   .colorScheme
-                                                  .onPrimary,
+                                                  .onBackground,
                                               iconSize: 20,
                                               icon: Icon(FontAwesomeIcons.eye),
                                             ),
@@ -305,7 +310,7 @@ class _LoginState extends State<Login> {
                                     child: Divider(
                                       color: Theme.of(context)
                                           .colorScheme
-                                          .onPrimary,
+                                          .onBackground,
                                       thickness: 1,
                                     )),
                                 Expanded(
@@ -320,7 +325,7 @@ class _LoginState extends State<Login> {
                                     child: Divider(
                                       color: Theme.of(context)
                                           .colorScheme
-                                          .onPrimary,
+                                          .onBackground,
                                       thickness: 1,
                                     )),
                               ],
@@ -437,21 +442,28 @@ class _LoginState extends State<Login> {
   }
 
   Future _submit(FirebaseAuthService auth, BuildContext context) async {
-    setState(() {
-      startAnimation = true;
-    });
+    if(!isDispose){
+      setState(() {
+        startAnimation = true;
+      });
+    }
     return await auth
         .signInWithEmailAndPassword(_email.text, _password.text)
         .catchError((e) {
-          setState(() {
-            startAnimation = false;
-          });
+      if(!isDispose){
+        setState(() {
+          startAnimation = false;
+        });
+      }
+
       print(e);
       auth.showSnackBar("email ou mot de passe invalide", context);
     }).whenComplete((){
-      setState(() {
-        startAnimation = false;
-      });
+      if(!isDispose){
+        setState(() {
+          startAnimation = false;
+        });
+      }
     });
   }
 

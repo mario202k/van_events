@@ -3,6 +3,7 @@ import 'package:vanevents/auth_widget.dart';
 import 'package:vanevents/screens/base_screen.dart';
 import 'package:vanevents/screens/chat.dart';
 import 'package:vanevents/screens/chat_room.dart';
+import 'package:vanevents/screens/details.dart';
 import 'package:vanevents/screens/full_photo.dart';
 import 'package:vanevents/screens/home_events.dart';
 import 'package:vanevents/screens/login.dart';
@@ -39,6 +40,8 @@ class $Router {
   Tickets tickets;
 
   UploadEvent uploadEvent;
+
+  Details details;
 
 
 }

@@ -234,7 +234,7 @@ class _ChatState extends State<Chat> with TickerProviderStateMixin {
                                   });
                             })
                         : Center(
-                            child: Text('Pas de conversation'),
+                            child: Text('Pas de conversation',style: Theme.of(context).textTheme.button,),
                           );
                   },
                 ),

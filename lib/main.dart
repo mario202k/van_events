@@ -1,5 +1,7 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -8,6 +10,13 @@ import 'package:vanevents/auth_widget_builder.dart';
 import 'package:vanevents/routing/route.gr.dart';
 import 'package:vanevents/services/firebase_auth_service.dart';
 import 'package:vanevents/services/firestore_database.dart';
+
+Future onSelectNotification(String payload) async {
+  if (payload != null) {
+    debugPrint('notification payload: ' + payload);
+  }
+  //await Navigator.pushNamed(Router.baseScreens,);
+}
 
 Future<dynamic> myBackgroundMessageHandler(Map<String, dynamic> message) {
   if (message.containsKey('data')) {
@@ -22,6 +31,41 @@ Future<dynamic> myBackgroundMessageHandler(Map<String, dynamic> message) {
     print(notification);
   }
 
+  final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+  FlutterLocalNotificationsPlugin();
+
+  var initializationSettingsAndroid =
+  AndroidInitializationSettings('app_icon');
+  var onDidReceiveLocalNotification;
+  var initializationSettingsIOS = IOSInitializationSettings(
+      onDidReceiveLocalNotification: onDidReceiveLocalNotification);
+  var initializationSettings = InitializationSettings(
+      initializationSettingsAndroid, initializationSettingsIOS);
+  flutterLocalNotificationsPlugin.initialize(initializationSettings,
+      onSelectNotification: onSelectNotification);
+
+  var androidPlatformChannelSpecifics = AndroidNotificationDetails(
+      'com.vaninamario.crossroads_events',
+      'Crossroads Events',
+      'your channel description',
+      playSound: true,
+      enableVibration: true,
+      importance: Importance.Max,
+      priority: Priority.High,
+      ticker: 'ticker');
+  var iOSPlatformChannelSpecifics = IOSNotificationDetails();
+  var platformChannelSpecifics = NotificationDetails(
+      androidPlatformChannelSpecifics, iOSPlatformChannelSpecifics);
+
+  flutterLocalNotificationsPlugin.show(
+      0,
+      message['notification']['title'],
+      message['data']['type']=='0'?
+      message['notification']['body']:'image',
+      platformChannelSpecifics,
+      payload: '');
+
+//  Firestore.instance.
   // Or do other work.
 }
 
@@ -55,10 +99,10 @@ class MyApp extends StatelessWidget {
       secondaryVariant: const Color(0xFF1CDEC9),
       background: const Color(0xFF451B6F),
       surface: const Color(0xFFFFFFFF),
-      onBackground: const Color(0xFF000000),
+      onBackground: const Color(0xFFFFFFFF),
       error: const Color(0xFF5733FF),
       onError: const Color(0xFFFFFFFF),
-      onPrimary: const Color(0xFFFFFFFF),
+      onPrimary: const Color(0xFF000000),
       onSecondary: const Color(0xFFFFFFFF),
       onSurface: const Color(0xFF5D1049),
       brightness: Brightness.dark);
@@ -106,7 +150,7 @@ class MyApp extends StatelessWidget {
                       ),
                       headline: GoogleFonts.raleway(
                         fontSize: 35.0,
-                        color: colorScheme.onPrimary,
+                        color: colorScheme.onBackground,
                       ),
                       subhead: GoogleFonts.sourceCodePro(
                         fontSize: 16.0,
@@ -134,7 +178,7 @@ class MyApp extends StatelessWidget {
                       ),
                       button: GoogleFonts.sourceCodePro(
                         fontSize: 15.0,
-                        color: colorScheme.onPrimary,
+                        color: colorScheme.onBackground,
                       ),
                     ),
                     buttonTheme: ButtonThemeData(

@@ -1,4 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_database/firebase_database.dart';
+import 'package:flutter/material.dart';
 import 'package:vanevents/models/formule.dart';
 
 class Event {
@@ -8,16 +10,12 @@ class Event {
   final String imageUrl;
   final Timestamp dateDebut;
   final Timestamp dateFin;
-  List<Formule> formules = List<Formule>();
 
-  Event(
-      {this.id,
-        this.titre,
-        this.description,
-        this.imageUrl,
-        this.dateDebut,
-        this.dateFin,
-        this.formules});
+  final ImageProvider imageProvider;
+
+
+  Event({this.id, this.titre, this.description, this.imageUrl, this.dateDebut,
+      this.dateFin, this.imageProvider});
 
   Map<String, dynamic> toMap() {
     return {
@@ -27,7 +25,6 @@ class Event {
       'imageUrl': imageUrl,
       'dateDebut': dateDebut,
       'dateFin': dateFin,
-      'formules': formules,
     };
   }
 
@@ -38,6 +35,8 @@ class Event {
         description: data['description'] ?? '',
         imageUrl: data['imageUrl']  ?? '',
         dateDebut: data['dateDebut']  ?? '',
-        dateFin: data['dateFin']  ?? '');
+        dateFin: data['dateFin']  ?? '',
+        imageProvider : NetworkImage(data['imageUrl'],),
+    );
   }
 }

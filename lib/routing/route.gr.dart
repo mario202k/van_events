@@ -21,6 +21,8 @@ import 'package:vanevents/screens/full_photo.dart';
 import 'package:vanevents/screens/profile.dart';
 import 'package:vanevents/screens/tickets.dart';
 import 'package:vanevents/screens/upload_event.dart';
+import 'package:vanevents/screens/details.dart';
+import 'package:vanevents/models/event.dart';
 
 class Router {
   static const authWidget = '/';
@@ -35,6 +37,7 @@ class Router {
   static const profile = '/profile';
   static const tickets = '/tickets';
   static const uploadEvent = '/upload-event';
+  static const details = '/details';
   static final navigator = ExtendedNavigator();
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
     final args = settings.arguments;
@@ -125,6 +128,15 @@ class Router {
       case Router.uploadEvent:
         return MaterialPageRoute<dynamic>(
           builder: (_) => UploadEvent(),
+          settings: settings,
+        );
+      case Router.details:
+        if (hasInvalidArgs<Event>(args)) {
+          return misTypedArgsRoute<Event>(args);
+        }
+        final typedArgs = args as Event;
+        return MaterialPageRoute<dynamic>(
+          builder: (_) => Details(typedArgs),
           settings: settings,
         );
       default:

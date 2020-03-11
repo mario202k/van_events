@@ -133,12 +133,12 @@ class _BaseScreensState extends State<BaseScreens> {
       onBackgroundMessage: myBackgroundMessageHandler,
       onLaunch: (Map<String, dynamic> message) async {
         print('onLaunch');
-        //showNotification(message);
+        showNotification(message);
       },
       onResume: (Map<String, dynamic> message) async {
         print('onResume');
 
-        //showNotification(message);
+        showNotification(message);
       },
     );
 
@@ -472,7 +472,7 @@ class _BaseScreensState extends State<BaseScreens> {
                                             // if current item is selected show blue color
                                             child: ListTile(
                                               title:
-                                                  Text(widget.innerDrawer[i]),
+                                                  Text(widget.innerDrawer[i],style: Theme.of(context).textTheme.button,),
                                               leading:
                                                   widget.iconsInnerDrawer[i],
                                               onTap: () {

@@ -379,27 +379,38 @@ class FirestoreDatabase {
     await Firestore.instance
         .collection('users')
         .document(user.uid)
-        .get().then((doc)async{
+        .get()
+        .then((doc) async {
       print(doc);
-          if(!doc.exists){
-            await Firestore.instance
-                .collection('users')
-                .document(user.uid)
-                .setData({
-              "id": user.uid,
-              'nom': user.displayName,
-              'imageUrl': user.photoUrl,
-              'email': user.email,
-              'password': '',
-              'lastActivity': DateTime.now(),
-              'provider': user.providerId,
-              'isLogin': false,
-              'attended': [],
-              'willAttend': [],
-              'chat': [],
-              'chatId': {}
-            }, merge: true);
-          }
+      if (!doc.exists) {
+        await Firestore.instance
+            .collection('users')
+            .document(user.uid)
+            .setData({
+          "id": user.uid,
+          'nom': user.displayName,
+          'imageUrl': user.photoUrl,
+          'email': user.email,
+          'password': '',
+          'lastActivity': DateTime.now(),
+          'provider': user.providerId,
+          'isLogin': false,
+          'attended': [],
+          'willAttend': [],
+          'chat': [],
+          'chatId': {}
+        }, merge: true);
+      }
     });
+  }
+
+  Stream<List<User>> participantsStream(String eventId) {
+    return _db
+        .collection('users')
+        .where('events', arrayContains: eventId)
+        .snapshots()
+        .map((users) => users.documents
+            .map((user) => User.fromMap(user.data, user.documentID))
+            .toList());
   }
 }

@@ -97,7 +97,7 @@ class _TopAppBarState extends State<TopAppBar> with TickerProviderStateMixin {
                 Flexible(
                   child: Text(
                     widget.title,
-                    style: Theme.of(context).textTheme.display3.copyWith(color: Theme.of(context).colorScheme.secondary),
+                    style: Theme.of(context).textTheme.headline,
                   ),
                 ),
 
@@ -141,7 +141,7 @@ class _TopAppBarState extends State<TopAppBar> with TickerProviderStateMixin {
                 Expanded(
                   child: Text(
                     widget.title,
-                    style: Theme.of(context).textTheme.display3,
+                    style: Theme.of(context).textTheme.headline,
                   ),
                 ),
                 widget.title == 'Chat' ? PopupMenuButton<String>(color: Theme.of(context).colorScheme.primary,

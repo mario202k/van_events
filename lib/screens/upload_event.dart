@@ -320,7 +320,7 @@ class _UploadEventState extends State<UploadEvent> {
                         FormBuilderTextField(
                           controller: _title,
                           attribute: 'title',
-                          decoration: buildInputDecoration(context,'Titre'),
+                          decoration: buildInputDecoration(context, 'Titre'),
                           validators: [
                             FormBuilderValidators.required(
                                 errorText: 'Champs requis')
@@ -336,7 +336,8 @@ class _UploadEventState extends State<UploadEvent> {
                           },
                           inputType: InputType.both,
                           format: DateFormat("dd/MM/yyyy 'à' HH:mm"),
-                          decoration: buildInputDecoration(context,'Date de debut'),
+                          decoration:
+                              buildInputDecoration(context, 'Date de debut'),
                           validators: [
                             FormBuilderValidators.required(
                                 errorText: "champs requis")
@@ -352,7 +353,8 @@ class _UploadEventState extends State<UploadEvent> {
                           },
                           inputType: InputType.both,
                           format: DateFormat("dd/MM/yyyy 'à' HH:mm"),
-                          decoration: buildInputDecoration(context,'Date de fin'),
+                          decoration:
+                              buildInputDecoration(context, 'Date de fin'),
                           validators: [
                             FormBuilderValidators.required(
                                 errorText: "champs requis")
@@ -375,7 +377,7 @@ class _UploadEventState extends State<UploadEvent> {
                               ];
                               return InputDecorator(
                                 decoration:
-                                buildInputDecoration(context,'Adresse'),
+                                    buildInputDecoration(context, 'Adresse'),
                                 child: Column(
                                   children: languages
                                       .map(
@@ -392,19 +394,29 @@ class _UploadEventState extends State<UploadEvent> {
                                               child: lang != "Autre"
                                                   ? Text(
                                                       lang,
+                                                      style: Theme.of(context)
+                                                          .textTheme
+                                                          .button,
                                                       textAlign: TextAlign.left,
                                                     )
                                                   : Row(
                                                       children: <Widget>[
                                                         Text(
                                                           lang,
+                                                          style:
+                                                              Theme.of(context)
+                                                                  .textTheme
+                                                                  .button,
                                                         ),
                                                         SizedBox(width: 20),
                                                         Expanded(
                                                           child: TextFormField(
                                                             key:
                                                                 _specifyTextFieldKey,
-                                                            decoration: buildInputDecoration(context,''),
+                                                            decoration:
+                                                                buildInputDecoration(
+                                                                    context,
+                                                                    ''),
                                                           ),
                                                         ),
                                                       ],
@@ -427,7 +439,8 @@ class _UploadEventState extends State<UploadEvent> {
                           controller: _description,
                           attribute: 'description',
                           maxLines: 10,
-                          decoration: buildInputDecoration(context,'Description'),
+                          decoration:
+                              buildInputDecoration(context, 'Description'),
                           validators: [
                             FormBuilderValidators.required(
                                 errorText: 'Champs requis')
@@ -667,17 +680,15 @@ class _UploadEventState extends State<UploadEvent> {
 
   InputDecoration buildInputDecoration(BuildContext context, String labelText) {
     return InputDecoration(
-                          enabledBorder: OutlineInputBorder(
-                              borderSide: BorderSide(
-                                  color:
-                                      Theme.of(context).colorScheme.onPrimary,
-                                  width: 2),
-                              borderRadius: BorderRadius.circular(25.0)),
-                          labelText: labelText,
-                          labelStyle: Theme.of(context).textTheme.button,
-                          border: InputBorder.none,
-                          errorStyle: Theme.of(context).textTheme.button,
-                        );
+      enabledBorder: OutlineInputBorder(
+          borderSide: BorderSide(
+              color: Theme.of(context).colorScheme.onBackground, width: 2),
+          borderRadius: BorderRadius.circular(25.0)),
+      labelText: labelText,
+      labelStyle: Theme.of(context).textTheme.button,
+      border: InputBorder.none,
+      errorStyle: Theme.of(context).textTheme.button,
+    );
   }
 
   void showSnackBar(String val, BuildContext context) {
