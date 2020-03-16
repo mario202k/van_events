@@ -459,11 +459,11 @@ class _LoginState extends State<Login> {
       print(e);
       auth.showSnackBar("email ou mot de passe invalide", context);
     }).whenComplete((){
-      if(!isDispose){
-        setState(() {
-          startAnimation = false;
-        });
-      }
+//      if(!isDispose){
+//        setState(() {
+//          startAnimation = false;
+//        });
+//      }
     });
   }
 

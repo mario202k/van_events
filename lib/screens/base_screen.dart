@@ -18,7 +18,158 @@ import 'package:vanevents/screens/tickets.dart';
 import 'package:vanevents/services/firebase_auth_service.dart';
 import 'chat.dart';
 
+class MySingletonFCM {
+  String uid;
+  BuildContext context;
+  final FirebaseMessaging _fcm = FirebaseMessaging();
+  static final MySingletonFCM _singleton = MySingletonFCM._internal();
 
+  factory MySingletonFCM(String uid, BuildContext context) {
+    _singleton.uid = uid;
+    _singleton.context = context;
+    return _singleton;
+  }
+
+  MySingletonFCM._internal() {
+    // fcm.configure
+    registerNotification(uid);
+    configLocalNotification();
+  }
+
+  void registerNotification(String uid) {
+    if (Platform.isIOS) {
+//      iosSubscription = _fcm.onIosSettingsRegistered.listen((data) {
+//        // save the token  OR subscribe to a topic here
+//        _saveDeviceToken(uid);
+//      });
+//
+//      _fcm.requestNotificationPermissions(IosNotificationSettings());
+    } else {
+      _saveDeviceToken(uid);
+    }
+
+    _fcm.configure(
+      onMessage: (Map<String, dynamic> message) async {
+        //showNotification(message);
+        db
+            .collection('chats')
+            .document(message['data']['chatId'])
+            .collection('messages')
+            .document(message['data']['id'])
+            .setData({'state': 1}, merge: true).then((_) {
+          print('done!!!!');
+        }).catchError((e) {
+          print(e);
+          print('merde');
+        }); //message recu
+      },
+      onBackgroundMessage: Platform.isIOS ? null : myBackgroundMessageHandler,
+      onLaunch: (Map<String, dynamic> message) async {
+        print('onLaunch');
+        //showNotification(message);
+        db
+            .collection('chats')
+            .document(message['data']['chatId'])
+            .collection('messages')
+            .document(message['data']['id'])
+            .setData({'state': 1}, merge: true).then((_) {
+          print('done!!!!');
+        }).catchError((e) {
+          print(e);
+          print('merde');
+        }); //message recu
+      },
+      onResume: (Map<String, dynamic> message) async {
+        print('onResume');
+
+        //showNotification(message);
+        db
+            .collection('chats')
+            .document(message['data']['chatId'])
+            .collection('messages')
+            .document(message['data']['id'])
+            .setData({'state': 1}, merge: true).then((_) {
+          print('done!!!!');
+        }).catchError((e) {
+          print(e);
+          print('merde');
+        }); //message recu
+      },
+    );
+  }
+
+  void configLocalNotification() {
+    var initializationSettingsAndroid =
+    AndroidInitializationSettings('app_icon');
+    var initializationSettingsIOS = IOSInitializationSettings(
+        onDidReceiveLocalNotification: onDidReceiveLocalNotification);
+    var initializationSettings = InitializationSettings(
+        initializationSettingsAndroid, initializationSettingsIOS);
+    flutterLocalNotificationsPlugin.initialize(initializationSettings,
+        onSelectNotification: onSelectNotification);
+  }
+
+  void showNotification(Map<String, dynamic> message) async {
+    var androidPlatformChannelSpecifics = AndroidNotificationDetails(
+        'com.vaninamario.crossroads_events',
+        'Crossroads Events',
+        'your channel description',
+        playSound: true,
+        enableVibration: true,
+        importance: Importance.Max,
+        priority: Priority.High,
+        ticker: 'ticker');
+    var iOSPlatformChannelSpecifics = IOSNotificationDetails();
+    var platformChannelSpecifics = NotificationDetails(
+        androidPlatformChannelSpecifics, iOSPlatformChannelSpecifics);
+
+    await flutterLocalNotificationsPlugin.show(
+        0,
+        message['notification']['title'],
+        message['data']['type'] == '0'
+            ? message['notification']['body']
+            : 'image',
+        platformChannelSpecifics,
+        payload: '');
+  }
+
+  Future onDidReceiveLocalNotification(
+      int id, String title, String body, String payload) {}
+
+  Future onSelectNotification(String payload) async {
+    if (payload != null) {
+      debugPrint('notification payload: ' + payload);
+    }
+    await Navigator.of(context).pushNamed(Router.baseScreens);
+  }
+
+  _saveDeviceToken(String uid) async {
+    _fcm.getToken().then((fcmToken) async {
+      Firestore.instance
+          .collection('users')
+          .document(uid)
+          .collection('tokens')
+          .document(fcmToken)
+          .setData({
+        'token': fcmToken,
+        'createAt': FieldValue.serverTimestamp(),
+        'platform': Platform.operatingSystem
+      });
+    }).catchError((err) {
+      Scaffold.of(context).showSnackBar(SnackBar(
+          backgroundColor: Theme.of(context).colorScheme.error,
+          duration: Duration(seconds: 3),
+          content: Text(
+            err.message.toString(),
+            textAlign: TextAlign.center,
+            style: TextStyle(
+                color: Theme.of(context).colorScheme.onError, fontSize: 16.0),
+          )));
+    });
+  }
+
+// Methods, variables ...
+}
 
 class BaseScreens extends StatefulWidget {
   final String uid;
@@ -78,9 +229,6 @@ class BaseScreens extends StatefulWidget {
 }
 
 class _BaseScreensState extends State<BaseScreens> {
-  final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
-      FlutterLocalNotificationsPlugin();
-
   final FirebaseMessaging _fcm = FirebaseMessaging();
 
   StreamSubscription iosSubscription;
@@ -105,8 +253,10 @@ class _BaseScreensState extends State<BaseScreens> {
 
   @override
   void initState() {
-    registerNotification(widget.uid);
-    configLocalNotification();
+//    registerNotification(widget.uid);
+//    configLocalNotification();
+
+    MySingletonFCM(widget.uid,context);
 
     _menuPositionController = MenuPositionController(initPosition: 0);
     _pageController =
@@ -126,25 +276,56 @@ class _BaseScreensState extends State<BaseScreens> {
     } else {
       _saveDeviceToken(uid);
     }
+
     _fcm.configure(
       onMessage: (Map<String, dynamic> message) async {
-        showNotification(message);
+        //showNotification(message);
+        db
+            .collection('chats')
+            .document(message['data']['chatId'])
+            .collection('messages')
+            .document(message['data']['id'])
+            .setData({'state': 1}, merge: true).then((_) {
+          print('done!!!!');
+        }).catchError((e) {
+          print(e);
+          print('merde');
+        }); //message recu
       },
-      onBackgroundMessage: myBackgroundMessageHandler,
+      onBackgroundMessage: Platform.isIOS ? null : myBackgroundMessageHandler,
       onLaunch: (Map<String, dynamic> message) async {
         print('onLaunch');
         showNotification(message);
+        db
+            .collection('chats')
+            .document(message['data']['chatId'])
+            .collection('messages')
+            .document(message['data']['id'])
+            .setData({'state': 1}, merge: true).then((_) {
+          print('done!!!!');
+        }).catchError((e) {
+          print(e);
+          print('merde');
+        }); //message recu
       },
       onResume: (Map<String, dynamic> message) async {
         print('onResume');
 
         showNotification(message);
+        db
+            .collection('chats')
+            .document(message['data']['chatId'])
+            .collection('messages')
+            .document(message['data']['id'])
+            .setData({'state': 1}, merge: true).then((_) {
+          print('done!!!!');
+        }).catchError((e) {
+          print(e);
+          print('merde');
+        }); //message recu
       },
     );
-
   }
-
-
 
   void configLocalNotification() {
     var initializationSettingsAndroid =
@@ -174,8 +355,9 @@ class _BaseScreensState extends State<BaseScreens> {
     await flutterLocalNotificationsPlugin.show(
         0,
         message['notification']['title'],
-        message['data']['type']=='0'?
-        message['notification']['body']:'image',
+        message['data']['type'] == '0'
+            ? message['notification']['body']
+            : 'image',
         platformChannelSpecifics,
         payload: '');
   }
@@ -471,8 +653,12 @@ class _BaseScreensState extends State<BaseScreens> {
                                             ),
                                             // if current item is selected show blue color
                                             child: ListTile(
-                                              title:
-                                                  Text(widget.innerDrawer[i],style: Theme.of(context).textTheme.button,),
+                                              title: Text(
+                                                widget.innerDrawer[i],
+                                                style: Theme.of(context)
+                                                    .textTheme
+                                                    .button,
+                                              ),
                                               leading:
                                                   widget.iconsInnerDrawer[i],
                                               onTap: () {

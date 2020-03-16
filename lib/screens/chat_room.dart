@@ -397,10 +397,17 @@ class _ChatMessageListItemState extends State<ChatMessageListItem> {
   bool isReceive = false;
   bool isRead = false;
   String id;
+  Stream<Message> msgStream;
+
 
   Widget build(BuildContext context) {
     final db = Provider.of<FirestoreDatabase>(context, listen: false);
     id = widget.message.id; //Car l'animated list reconstruit que le build
+    msgStream = db.getChatMessageStream(widget.chatId, id);
+
+    if (!widget.isMe) {
+      db.setMessageRead(widget.chatId, id);
+    }
 
     return Container(
       margin: EdgeInsets.only(top: 4, bottom: 4),
@@ -409,36 +416,45 @@ class _ChatMessageListItemState extends State<ChatMessageListItem> {
               mainAxisAlignment:
                   widget.isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
               crossAxisAlignment: CrossAxisAlignment.end,
+              mainAxisSize: MainAxisSize.max,
               children: <Widget>[
                 widget.isMe
                     ? StreamBuilder<Message>(
-                        //pour écouté si le message est lu
-                        stream: db.getChatMessageStream(widget.chatId, id),
-                        builder: (context, snapshot) {
-                          if (snapshot.hasData) {
-                            Message message = snapshot.data;
-                            int state = message.state;
+                            //pour écouté si le message est lu
+                            stream: msgStream,
+                            initialData: widget.message,
+                            builder: (context, snapshot) {
+                              if (snapshot.hasData) {
+                                Message message = snapshot.data;
+                                int state = message.state;
+                                isReceive = false;
+                                isRead = false;
 
-                            isReceive = false;
-                            isRead = false;
+                                print('coucou$state');
 
-                            switch (state) {
-                              case 1:
-                                isReceive = true;
-                                break;
-                              case 2:
-                                isRead = true;
-                                isReceive = true;
-                            }
-                          }
+                                switch (state) {
+                                  case 1:
+                                    isReceive = true;
 
-                          return Icon(
-                            IconData(isReceive ? 0xf382 : 0xf3d0,
-                                fontFamily: "CupertinoIcons"),
-                            size: 19,
-                            color: isRead ? Colors.green : Colors.grey,
-                          );
-                        })
+                                    break;
+                                  case 2:
+                                    isReceive = true;
+                                    isRead = true;
+                                    if (msgStream != null) {
+
+                                      msgStream = null;
+                                    }
+                                }
+                              }
+
+                              return Icon(
+                                IconData(isReceive ? 0xf382 : 0xf3d0,
+                                    fontFamily: "CupertinoIcons"),
+                                size: 19,
+                                color: isRead ? Colors.green : Colors.grey,
+                              );
+                            })
+
                     : SizedBox(),
                 widget.isMe
                     ? Text(

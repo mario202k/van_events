@@ -32,16 +32,16 @@ dependencies:
   cloud_firestore: ^0.13.4+1
   google_fonts: ^0.3.9
   google_sign_in: ^4.1.4
-  shared_preferences: ^0.5.6+2
+  shared_preferences: ^0.5.6+3
   image_picker: ^0.6.3+4
   font_awesome_flutter: ^8.7.0
   flare_flutter: ^2.0.1
   bubbled_navigation_bar: ^0.0.4
-  flutter_form_builder: ^3.8.0+1
+  flutter_form_builder: ^3.8.1
   flutter_progress_button: ^1.0.0
   flutter_inner_drawer: ^0.5.5
   flutter_swiper: ^1.1.6
-  flutter_local_notifications: ^1.2.1
+  flutter_local_notifications: ^1.2.2
   fl_chart: ^0.8.3
   intl: ^0.16.1
   platform_alert_dialog: ^1.0.0+2
@@ -54,6 +54,7 @@ dependencies:
   badges: ^1.1.1
   async: ^2.4.0
   auto_route: ^0.3.1
+  stripe_payment: ^1.0.6
 
 dev_dependencies:
 

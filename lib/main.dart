@@ -11,12 +11,9 @@ import 'package:vanevents/routing/route.gr.dart';
 import 'package:vanevents/services/firebase_auth_service.dart';
 import 'package:vanevents/services/firestore_database.dart';
 
-Future onSelectNotification(String payload) async {
-  if (payload != null) {
-    debugPrint('notification payload: ' + payload);
-  }
-  //await Navigator.pushNamed(Router.baseScreens,);
-}
+FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+    FlutterLocalNotificationsPlugin();
+Firestore db = Firestore.instance;
 
 Future<dynamic> myBackgroundMessageHandler(Map<String, dynamic> message) {
   if (message.containsKey('data')) {
@@ -30,19 +27,6 @@ Future<dynamic> myBackgroundMessageHandler(Map<String, dynamic> message) {
     final dynamic notification = message['notification'];
     print(notification);
   }
-
-  final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
-  FlutterLocalNotificationsPlugin();
-
-  var initializationSettingsAndroid =
-  AndroidInitializationSettings('app_icon');
-  var onDidReceiveLocalNotification;
-  var initializationSettingsIOS = IOSInitializationSettings(
-      onDidReceiveLocalNotification: onDidReceiveLocalNotification);
-  var initializationSettings = InitializationSettings(
-      initializationSettingsAndroid, initializationSettingsIOS);
-  flutterLocalNotificationsPlugin.initialize(initializationSettings,
-      onSelectNotification: onSelectNotification);
 
   var androidPlatformChannelSpecifics = AndroidNotificationDetails(
       'com.vaninamario.crossroads_events',
@@ -60,15 +44,28 @@ Future<dynamic> myBackgroundMessageHandler(Map<String, dynamic> message) {
   flutterLocalNotificationsPlugin.show(
       0,
       message['notification']['title'],
-      message['data']['type']=='0'?
-      message['notification']['body']:'image',
+      message['data']['type'] == '0'
+          ? message['notification']['body']
+          : 'image',
       platformChannelSpecifics,
       payload: '');
 
-//  Firestore.instance.
+  db
+      .collection('chats')
+      .document(message['data']['chatId'])
+      .collection('messages')
+      .document(message['data']['id'])
+      .setData({'state': 1}, merge: true).then((_) {
+    print('done!!!!');
+  }).catchError((e) {
+    print(e);
+    print('merde');
+  }); //message recu
+
+  return Future<void>.value();
+
   // Or do other work.
 }
-
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();

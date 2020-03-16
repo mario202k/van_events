@@ -311,9 +311,10 @@ class FirestoreDatabase {
         });
       }).then((_) {
         //création du chat room
-        _db.collection("chat").document(idEvent).setData(
-            {'createdAt': DateTime.now(), 'count': 0, 'messages': []},
-            merge: true);
+        _db
+            .collection("chats")
+            .document(idEvent)
+            .setData({'createdAt': DateTime.now(), 'id': idEvent}, merge: true);
       }).then((_) {
         showSnackBar("Event ajouter", context);
       }).catchError((e) {
@@ -412,5 +413,14 @@ class FirestoreDatabase {
         .map((users) => users.documents
             .map((user) => User.fromMap(user.data, user.documentID))
             .toList());
+  }
+
+  void setMessageRead(String chatId, String id) {
+    _db
+        .collection('chats')
+        .document(chatId)
+        .collection('messages')
+        .document(id)
+        .setData({'state': 2}, merge: true);
   }
 }
