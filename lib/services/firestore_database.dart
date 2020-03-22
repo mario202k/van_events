@@ -423,4 +423,18 @@ class FirestoreDatabase {
         .document(id)
         .setData({'state': 2}, merge: true);
   }
+
+  Future<List<Formule>> getFormulasList(String id) async {
+    return await _db
+        .collection('events')
+        .document(id)
+        .collection('formules')
+        .getDocuments()
+        .then((doc) => doc.documents
+            .map((doc) => Formule.fromMap(doc.data, doc.documentID))
+            .toList())
+        .catchError((err) {
+      print(err);
+    });
+  }
 }

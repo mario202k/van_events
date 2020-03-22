@@ -23,6 +23,8 @@ import 'package:vanevents/screens/tickets.dart';
 import 'package:vanevents/screens/upload_event.dart';
 import 'package:vanevents/screens/details.dart';
 import 'package:vanevents/models/event.dart';
+import 'package:vanevents/screens/formula_choice.dart';
+import 'package:vanevents/models/formule.dart';
 
 class Router {
   static const authWidget = '/';
@@ -38,6 +40,7 @@ class Router {
   static const tickets = '/tickets';
   static const uploadEvent = '/upload-event';
   static const details = '/details';
+  static const formulaChoice = '/formula-choice';
   static final navigator = ExtendedNavigator();
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
     final args = settings.arguments;
@@ -137,6 +140,15 @@ class Router {
         final typedArgs = args as Event;
         return MaterialPageRoute<dynamic>(
           builder: (_) => Details(typedArgs),
+          settings: settings,
+        );
+      case Router.formulaChoice:
+        if (hasInvalidArgs<List<Formule>>(args)) {
+          return misTypedArgsRoute<List<Formule>>(args);
+        }
+        final typedArgs = args as List<Formule>;
+        return MaterialPageRoute<dynamic>(
+          builder: (_) => FormulaChoice(typedArgs),
           settings: settings,
         );
       default:

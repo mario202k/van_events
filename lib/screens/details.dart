@@ -4,7 +4,9 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:vanevents/models/event.dart';
+import 'package:vanevents/models/formule.dart';
 import 'package:vanevents/models/user.dart';
+import 'package:vanevents/routing/route.gr.dart';
 import 'package:vanevents/services/firestore_database.dart';
 
 class Details extends StatefulWidget {
@@ -18,12 +20,19 @@ class Details extends StatefulWidget {
 
 class _DetailsState extends State<Details> {
   Stream<List<User>> participants;
+  List<Formule> formulas;
 
   @override
-  Widget build(BuildContext context) {
-    final db = Provider.of<FirestoreDatabase>(context, listen: false);
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+  }
 
+  @override
+  Widget build(BuildContext context){
+    final db = Provider.of<FirestoreDatabase>(context, listen: false);
     participants = db.participantsStream(widget.event.id);
+    db.getFormulasList(widget.event.id).then((form){formulas = form;});
 
     return Scaffold(
       body: NestedScrollView(
@@ -228,20 +237,7 @@ class _DetailsState extends State<Details> {
           shape: StadiumBorder(),
           fillColor: Theme.of(context).colorScheme.primary,
           onPressed: () {
-//            StripeSource.addSource().then((String token) {
-//              print("$token!!!"); //your stripe card source token
-//              //PaymentService().addCard(token);
-//
-//              _authService.getUser.then((user) {
-//                _attachSource(callableSource,user.uid, token);
-//                _chargeCustomer(callable, user.uid, token);
-//              });
-//            });
-//            Navigator.push(
-//              context,
-//              MaterialPageRoute(builder: (context) => Pay(event.id)),
-//            );
-            //Navigator.of(context).pushNamed('/pay',arguments: event.id);
+            Navigator.of(context).pushNamed(Router.formulaChoice,arguments: formulas);
           }),
     );
   }

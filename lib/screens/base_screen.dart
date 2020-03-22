@@ -9,6 +9,7 @@ import 'package:flutter_inner_drawer/inner_drawer.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:provider/provider.dart';
+import 'package:stripe_payment/stripe_payment.dart';
 import 'package:vanevents/main.dart';
 import 'package:vanevents/models/user.dart';
 import 'package:vanevents/routing/route.gr.dart';
@@ -263,6 +264,16 @@ class _BaseScreensState extends State<BaseScreens> {
         PageController(initialPage: 0, keepPage: false, viewportFraction: 1.0);
     _pageController.addListener(handlePageChange);
     super.initState();
+
+    StripePayment.setOptions(
+      StripeOptions(
+        publishableKey: 'pk_test_gPlqnEqiVydntTBkyFzc4aUb001o1vGwb6', // add you key as per Stripe dashboard
+        merchantId: 'merchant.com.vanina.vanevents',
+// add you merchantId as per apple developer account
+        androidPayMode: 'test',
+      ),
+    );
+
   }
 
   void registerNotification(String uid) {
