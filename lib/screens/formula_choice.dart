@@ -25,7 +25,8 @@ class FormulaChoice extends StatefulWidget {
 
 class _FormulaChoiceState extends State<FormulaChoice> {
   String text = 'Click the button to start the payment';
-  double totalCost = 10.0;
+
+  //double totalCost = 10.0;
   double tip = 1.0;
   double tax = 0.0;
   double taxPercent = 0.2;
@@ -33,22 +34,28 @@ class _FormulaChoiceState extends State<FormulaChoice> {
   bool showSpinner = false;
   String url =
       'https://us-central1-demostripe-b9557.cloudfunctions.net/StripePI';
+  String currency = 'EUR';
 
   //final GlobalKey<AnimatedListState> _listKey = GlobalKey<AnimatedListState>();
-  GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey();
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey();
   List<Formule> _formules = List<Formule>();
 
   List<Participant> participants = List<Participant>();
+  Map<Formule, int> nbPersonneParFormule = Map<Formule, int>();
 
   //List<CardFormula> listWidget;
 
   int indexParticipants = 0;
 
-  double _total = 0;
+  double totalCost = 0;
 
   @override
   void initState() {
     _formules = widget.formulas;
+
+    for (int i = 0; i < _formules.length; i++) {
+      nbPersonneParFormule.addAll(<Formule, int>{_formules[i]: 0});
+    }
 
     super.initState();
   }
@@ -57,12 +64,15 @@ class _FormulaChoiceState extends State<FormulaChoice> {
     int prix = formule.prix;
 
     if (plus) {
+      nbPersonneParFormule[formule]++;
+
       setState(() {
-        _total = _total + prix;
+        totalCost = totalCost + prix;
       });
     } else {
+      nbPersonneParFormule[formule]--;
       setState(() {
-        _total = _total - prix;
+        totalCost = totalCost - prix;
       });
       //pour supprimer le participant;
       for (int i = participants.length - 1; i >= 0; i--) {
@@ -170,10 +180,18 @@ class _FormulaChoiceState extends State<FormulaChoice> {
 
     List<ApplePayItem> items = [];
 
-    items.add(ApplePayItem(
-      label: 'Demo Order',
-      amount: totalCost.toString(),
-    ));
+    for (int i = 0; i < nbPersonneParFormule.length; i++) {
+      String label =
+          '${nbPersonneParFormule.keys.toList().elementAt(i).title} '
+          'X ${nbPersonneParFormule.values.toList().elementAt(i)}';
+      String total = (nbPersonneParFormule.keys.toList().elementAt(i).prix
+          *nbPersonneParFormule.values.toList().elementAt(i)).toString();
+      items.add(ApplePayItem(
+        label: label,
+        amount: total,
+      ));
+    }
+
 
 //    if (tip != 0.0)
 //      items.add(ApplePayItem(
@@ -190,7 +208,7 @@ class _FormulaChoiceState extends State<FormulaChoice> {
 //    }
 
     items.add(ApplePayItem(
-      label: 'Vendor A',
+      label: 'Total',
       amount: (totalCost + tip + tax).toString(),
     ));
 
@@ -223,6 +241,7 @@ class _FormulaChoiceState extends State<FormulaChoice> {
 
     paymentMethod != null
         ? processPaymentAsDirectCharge(paymentMethod)
+    //:showSnackBar('It is not possible to pay with this card. Please try again with a different card', _scaffoldKey.currentState);
         : showDialog(
             context: context,
             builder: (BuildContext context) => ShowDialogToDismiss(
@@ -261,7 +280,118 @@ class _FormulaChoiceState extends State<FormulaChoice> {
                 buttonText: 'CLOSE'));
   }
 
-  Future<void> processPaymentAsDirectCharge(PaymentMethod paymentMethod) {}
+  Future<void> processPaymentAsDirectCharge(PaymentMethod paymentMethod) async {
+    setState(() {
+      showSpinner = true;
+    });
+
+    //step 2: request to create PaymentIntent, attempt to confirm the payment & return PaymentIntent
+    final http.Response response = await http
+        .post('$url?amount=$amount&currency=$currency&paym=${paymentMethod.id}');
+    print('Now i decode');
+    if (response.body != null && response.body != 'error') {
+      final paymentIntentX = jsonDecode(response.body);
+      final status = paymentIntentX['paymentIntent']['status'];
+      final strAccount = paymentIntentX['stripeAccount'];
+
+      //step 3: check if payment was succesfully confirmed
+      if (status == 'succeeded') {
+        //payment was confirmed by the server without need for futher authentification
+
+        StripePayment.completeNativePayRequest();
+
+        setState(() {
+          text =
+          'Payment completed. ${paymentIntentX['paymentIntent']['amount'].toString()}p succesfully charged';
+          showSpinner = false;
+        });
+
+      } else {
+        //step 4: there is a need to authenticate
+        StripePayment.setStripeAccount(strAccount);
+
+        await StripePayment.confirmPaymentIntent(PaymentIntent(
+            paymentMethodId: paymentIntentX['paymentIntent']
+            ['payment_method'],
+            clientSecret: paymentIntentX['paymentIntent']['client_secret']))
+            .then(
+              (PaymentIntentResult paymentIntentResult) async {
+            //This code will be executed if the authentication is successful
+            //step 5: request the server to confirm the payment with
+
+            final statusFinal = paymentIntentResult.status;
+
+            if (statusFinal == 'succeeded') {
+              StripePayment.completeNativePayRequest();
+
+              setState(() {
+                showSpinner = false;
+              });
+
+
+            } else if (statusFinal == 'processing') {
+              StripePayment.cancelNativePayRequest();
+
+              setState(() {
+                showSpinner = false;
+              });
+              showDialog(
+                  context: context,
+                  builder: (BuildContext context) => ShowDialogToDismiss(
+                      title: 'Warning',
+                      content:
+                      'The payment is still in \'processing\' state. This is unusual. Please contact us',
+                      buttonText: 'CLOSE'));
+
+            } else {
+              StripePayment.cancelNativePayRequest();
+
+              setState(() {
+                showSpinner = false;
+              });
+              showDialog(
+                  context: context,
+                  builder: (BuildContext context) => ShowDialogToDismiss(
+                      title: 'Error',
+                      content:
+                      'There was an error to confirm the payment. Details: $statusFinal',
+                      buttonText: 'CLOSE'));
+            }
+
+          },
+          //If Authentication fails, a PlatformException will be raised which can be handled here
+        ).catchError((e) {
+          //case B1
+          StripePayment.cancelNativePayRequest();
+
+          setState(() {
+            showSpinner = false;
+          });
+          showDialog(
+              context: context,
+              builder: (BuildContext context) => ShowDialogToDismiss(
+                  title: 'Error',
+                  content:
+                  'There was an error to confirm the payment. Please try again with another card',
+                  buttonText: 'CLOSE'));
+        });
+      }
+    } else {
+      //case A
+      StripePayment.cancelNativePayRequest();
+
+      setState(() {
+        showSpinner = false;
+      });
+      showDialog(
+          context: context,
+          builder: (BuildContext context) => ShowDialogToDismiss(
+              title: 'Error',
+              content:
+              'There was an error in creating the payment. Please try again with another card',
+              buttonText: 'CLOSE'));
+    }
+  }
 
   _buildTotalContent() {
     return Container(
@@ -273,7 +403,7 @@ class _FormulaChoiceState extends State<FormulaChoice> {
           Flexible(
               flex: 1,
               child: Text(
-                '   $_total €',
+                '   $totalCost €',
                 textAlign: TextAlign.center,
               )),
           Flexible(
@@ -289,17 +419,52 @@ class _FormulaChoiceState extends State<FormulaChoice> {
                 color: Theme.of(context).colorScheme.onSecondary,
               ),
               onPressed: () {
-                print(participants.length);
-                for (int i = 0; i < participants.length; i++) {
-                  print(
-                      '${participants[i].nom} ${participants[i].prenom} ${participants[i].index}');
+                if(allParticipantIsOk()){
+                  //checkIfNativePayReady();
+                }else{
+
+                  showSnackBar('Tous les participants ne sont pas valides', _scaffoldKey.currentState);
                 }
+
+
+//                print(participants.length);
+//                for (int i = 0; i < participants.length; i++) {
+//                  print(
+//                      '${participants[i].nom} ${participants[i].prenom} ${participants[i].index}');
+//                  print(participants[i].fbKey.currentState.validate());
+//                }
               },
             ),
           ),
         ],
       ),
     );
+  }
+  void showSnackBar(String val, ScaffoldState state) {
+    state.showSnackBar(SnackBar(
+        backgroundColor: Theme.of(context).colorScheme.error,
+        duration: Duration(seconds: 3),
+        content: Text(
+          val,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+              color: Theme.of(context).colorScheme.onError, fontSize: 16.0),
+        )));
+  }
+
+  bool allParticipantIsOk() {
+    bool b = true;
+    if(participants.length == 0){
+      b = false;
+    }
+
+    for(int i=0; i<participants.length;i++){
+      if(!participants[i].fbKey.currentState.validate()){
+        b = false;
+        break;
+      }
+    }
+    return b;
   }
 }
 
@@ -318,6 +483,8 @@ class _CardParticipantState extends State<CardParticipant> {
   final GlobalKey<FormBuilderState> _fbKey = GlobalKey<FormBuilderState>();
   final FocusScopeNode _nom = FocusScopeNode();
   final FocusScopeNode _prenom = FocusScopeNode();
+  final TextEditingController _nomCtrl = TextEditingController();
+  final TextEditingController _prenomCtrl = TextEditingController();
 
   @override
   void initState() {
@@ -377,7 +544,12 @@ class _CardParticipantState extends State<CardParticipant> {
                             FocusScope.of(context).requestFocus(_prenom);
                           }
                         },
+                        controller: _nomCtrl,
                         onChanged: (val) {
+                          if (_nomCtrl.text.length == 0) {
+                            _nomCtrl.clear();
+                          }
+
                           String nom = val;
                           _fbKey.currentState.save();
                           widget.onChanged(_fbKey, widget.index,
@@ -422,7 +594,11 @@ class _CardParticipantState extends State<CardParticipant> {
                                 .invokeMethod('TextInput.hide');
                           }
                         },
+                        controller: _prenomCtrl,
                         onChanged: (val) {
+                          if (_prenomCtrl.text.length == 0) {
+                            _prenomCtrl.clear();
+                          }
                           String prenom = val;
                           _fbKey.currentState.save();
                           widget.onChanged(_fbKey, widget.index,
