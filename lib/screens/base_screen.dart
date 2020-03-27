@@ -256,6 +256,14 @@ class _BaseScreensState extends State<BaseScreens> {
   void initState() {
 //    registerNotification(widget.uid);
 //    configLocalNotification();
+    StripePayment.setOptions(
+      StripeOptions(
+        publishableKey: 'pk_test_gPlqnEqiVydntTBkyFzc4aUb001o1vGwb6', // add you key as per Stripe dashboard
+        merchantId: 'merchant.com.vanina.vanevents',
+// add you merchantId as per apple developer account
+        androidPayMode: 'test',
+      ),
+    );
 
     MySingletonFCM(widget.uid,context);
 
@@ -265,14 +273,7 @@ class _BaseScreensState extends State<BaseScreens> {
     _pageController.addListener(handlePageChange);
     super.initState();
 
-    StripePayment.setOptions(
-      StripeOptions(
-        publishableKey: 'pk_test_gPlqnEqiVydntTBkyFzc4aUb001o1vGwb6', // add you key as per Stripe dashboard
-        merchantId: 'merchant.com.vanina.vanevents',
-// add you merchantId as per apple developer account
-        androidPayMode: 'test',
-      ),
-    );
+
 
   }
 

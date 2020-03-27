@@ -1,18 +1,13 @@
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/physics.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:stripe_payment/stripe_payment.dart';
 import 'package:vanevents/models/formule.dart';
-
-import 'package:stripe_payment/stripe_payment.dart';
 import 'package:flutter/cupertino.dart';
 import 'dart:io';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
-import 'package:modal_progress_hud/modal_progress_hud.dart';
 import 'package:vanevents/models/participant.dart';
+import 'package:stripe_payment/stripe_payment.dart';
 
 class FormulaChoice extends StatefulWidget {
   final List<Formule> formulas;
@@ -51,6 +46,9 @@ class _FormulaChoiceState extends State<FormulaChoice> {
 
   @override
   void initState() {
+
+
+
     _formules = widget.formulas;
 
     for (int i = 0; i < _formules.length; i++) {
@@ -176,8 +174,6 @@ class _FormulaChoiceState extends State<FormulaChoice> {
   Future<void> createPaymentMethodNative() async {
     print('started NATIVE payment...');
 
-    StripePayment.setStripeAccount(null);
-
     List<ApplePayItem> items = [];
 
     for (int i = 0; i < nbPersonneParFormule.length; i++) {
@@ -285,12 +281,60 @@ class _FormulaChoiceState extends State<FormulaChoice> {
       showSpinner = true;
     });
 
+    HttpsCallableResult result;
+    try {
+      final HttpsCallable callablePaymentIntent = CloudFunctions.instance.getHttpsCallable(
+        functionName: 'paymentIntent',
+      );
+      result = await callablePaymentIntent.call(
+        <String, dynamic>{'amount': amount,'paymentMethod': paymentMethod.id},
+      );
+      print('!1!${result.data}');
+//      setState(() {
+//        _response = result.data['repeat_message'];
+//        _responseCount = result.data['repeat_count'];
+//      });
+    } on CloudFunctionsException catch (e) {
+      print('caught firebase functions exception');
+      print(e.code);
+      print(e.message);
+      print(e.details);
+      //case A
+      StripePayment.cancelNativePayRequest();
+
+      setState(() {
+        showSpinner = false;
+      });
+      showDialog(
+          context: context,
+          builder: (BuildContext context) => ShowDialogToDismiss(
+              title: 'Error',
+              content:
+              'There was an error in creating the payment. Please try again with another card',
+              buttonText: 'CLOSE'));
+      return;
+    } catch (e) {
+      print('caught generic exception');
+      print(e);
+      //case A
+      StripePayment.cancelNativePayRequest();
+
+      setState(() {
+        showSpinner = false;
+      });
+      showDialog(
+          context: context,
+          builder: (BuildContext context) => ShowDialogToDismiss(
+              title: 'Error',
+              content:
+              'There was an error in creating the payment. Please try again with another card',
+              buttonText: 'CLOSE'));
+      return;
+    }
+
     //step 2: request to create PaymentIntent, attempt to confirm the payment & return PaymentIntent
-    final http.Response response = await http
-        .post('$url?amount=$amount&currency=$currency&paym=${paymentMethod.id}');
-    print('Now i decode');
-    if (response.body != null && response.body != 'error') {
-      final paymentIntentX = jsonDecode(response.body);
+
+      final paymentIntentX = result.data;
       final status = paymentIntentX['paymentIntent']['status'];
       final strAccount = paymentIntentX['stripeAccount'];
 
@@ -308,7 +352,7 @@ class _FormulaChoiceState extends State<FormulaChoice> {
 
       } else {
         //step 4: there is a need to authenticate
-        StripePayment.setStripeAccount(strAccount);
+        //StripePayment.setStripeAccount(strAccount);
 
         await StripePayment.confirmPaymentIntent(PaymentIntent(
             paymentMethodId: paymentIntentX['paymentIntent']
@@ -376,21 +420,6 @@ class _FormulaChoiceState extends State<FormulaChoice> {
                   buttonText: 'CLOSE'));
         });
       }
-    } else {
-      //case A
-      StripePayment.cancelNativePayRequest();
-
-      setState(() {
-        showSpinner = false;
-      });
-      showDialog(
-          context: context,
-          builder: (BuildContext context) => ShowDialogToDismiss(
-              title: 'Error',
-              content:
-              'There was an error in creating the payment. Please try again with another card',
-              buttonText: 'CLOSE'));
-    }
   }
 
   _buildTotalContent() {
@@ -420,7 +449,7 @@ class _FormulaChoiceState extends State<FormulaChoice> {
               ),
               onPressed: () {
                 if(allParticipantIsOk()){
-                  //checkIfNativePayReady();
+                  checkIfNativePayReady();
                 }else{
 
                   showSnackBar('Tous les participants ne sont pas valides', _scaffoldKey.currentState);
